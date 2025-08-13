@@ -17,9 +17,6 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro  # utilise {$KC_HOSTNAME} + {$ACME_EMAIL}
       - caddy_data:/data                     # certificats/ACME persistés
       - caddy_config:/config
-    depends_on:
-      keycloak:
-        condition: service_healthy
     networks:
       - internal
 
@@ -55,12 +52,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    healthcheck:
-      # Plus lisible : on considère "healthy" si /health/ready renvoie 2xx
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
     networks:
       - internal
 
