@@ -10,21 +10,6 @@ Authentification via SAML2
 Retour vers Keycloak et émission d’un token pour l’application métier
 
 🏗 Architecture technique
-
-[Internet]
-    │  80/443
-┌────▼──────────────────────────────┐
-│   Caddy (Reverse Proxy + HTTPS)   │
-│   - TLS auto via Let's Encrypt    │
-│   - Redirection 80→443            │
-└────┬──────────────────────────────┘
-     │ Docker network
-┌────▼──────────────┐        ┌────────────────────┐
-│   Keycloak (SP)   │        │  PostgreSQL (DB)   │
-│   - Console admin │        │  - Données persist │
-│   - Module SAML   │        └────────────────────┘
-│     IdP = Auth0   │
-└───────────────────┘
 Keycloak : Service Provider, interface d’admin et gestion des mappages de rôles.
 Auth0 : Identity Provider externe, authentifie l’utilisateur via SAML2.
 Caddy : Reverse proxy, termination HTTPS, routage interne.
