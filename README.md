@@ -21,6 +21,7 @@ Contexte : Notre utilisateur fictif s’appelle Jean Dupuis, employé du départ
 1. Accès à l’application métier
 Jean ouvre son navigateur et visite l’URL de l’application professionnelle :
 https://app.example.com
+
 L’application n’ayant pas de session valide, elle déclenche une redirection OIDC vers le serveur d’authentification :
 https://kc.example.com/realms/societe/protocol/openid-connect/auth
 
@@ -37,8 +38,8 @@ Attributs : prénom, nom, service, rôle.
 
 5. Retour vers Keycloak
 Auth0 renvoie l’assertion SAML à Keycloak via un POST sécurisé vers l’endpoint ACS (Assertion Consumer Service).
-Keycloak :
 
+Keycloak :
 Vérifie la signature de l’assertion.
 Mappe les attributs reçus vers ses propres rôles (role_marketing, role_employee).
 Crée une session utilisateur.
