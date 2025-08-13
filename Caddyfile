@@ -1,0 +1,42 @@
+{
+	# Contact ACME pour Let’s Encrypt (obligatoire)
+	email {$ACME_EMAIL}
+
+	# (Optionnel) logs et niveau de verbosité
+	# log {
+	# 	level INFO
+	# }
+
+	# (Optionnel) utiliser l'environnement de test ACME pour éviter les rate limits
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+# Site: nom d’hôte public
+{$KC_HOSTNAME} {
+	# Compression
+	encode zstd gzip
+
+	# En-têtes de sécurité de base
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Optionnel: CSP minimale (à ajuster selon besoins front)
+		Content-Security-Policy "frame-ancestors 'none'; upgrade-insecure-requests"
+	}
+
+	# Proxy vers Keycloak (HTTP interne)
+	reverse_proxy keycloak:8080 {
+		# Conserver/propager les en-têtes utiles au mode --proxy=edge de Keycloak
+		header_up Host {host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+		# Améliore le streaming des réponses (évite le buffering)
+		flush_interval -1
+	}
+
+	# Caddy gère automatiquement:
+	# - la redirection HTTP→HTTPS (port 80 vers 443)
+	# - l’obtention/renouvellement du certificat Let’s Encrypt pour {$KC_HOSTNAME}
+}

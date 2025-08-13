@@ -1,0 +1,94 @@
+version: "3.9"
+
+# POC Keycloak (SP) ↔ Auth0 (IdP) via SAML2
+# Front: Caddy (HTTPS Let's Encrypt, sslip.io)
+# DB: PostgreSQL (persistance)
+
+services:
+  reverse-proxy:
+    image: caddy:2.7
+    container_name: caddy
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "80:80"    # requis pour le challenge ACME HTTP-01
+      - "443:443"  # trafic HTTPS utilisateur
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro  # utilise {$KC_HOSTNAME} + {$ACME_EMAIL}
+      - caddy_data:/data                     # certificats/ACME persistés
+      - caddy_config:/config
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - internal
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: keycloak
+    restart: unless-stopped
+    env_file: .env
+    command:
+      - start
+      - --hostname=$(KC_HOSTNAME)      # ex: 52-31-123-45.sslip.io (sslip.io)
+      - --proxy=edge                   # fait confiance au reverse-proxy
+      - --http-enabled=true            # HTTP clair en réseau interne
+      - --http-port=8080
+      - --https-port=8443
+      - --health-enabled=true
+    environment:
+      # Bootstrap de l’admin Keycloak (créé au 1er démarrage si absent)
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+
+      # Base de données
+      KC_DB: postgres
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+
+      # Tuning JVM (adapté à 4 Go RAM) – définis KC_HEAP_MIN/MAX dans .env
+      JAVA_OPTS: >-
+        -Xms${KC_HEAP_MIN} -Xmx${KC_HEAP_MAX}
+        -XX:+UseG1GC
+        -Djava.net.preferIPv4Stack=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # Plus lisible : on considère "healthy" si /health/ready renvoie 2xx
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      # Outil natif pour vérifier que la DB répond
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  pg_data:
