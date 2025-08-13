@@ -21,22 +21,21 @@ Contexte : Notre utilisateur fictif s’appelle Jean Dupuis, employé du départ
 1. Accès à l’application métier
 Jean ouvre son navigateur et visite l’URL de l’application professionnelle :
 https://app.example.com
-
 L’application n’ayant pas de session valide, elle déclenche une redirection OIDC vers le serveur d’authentification :
 https://kc.example.com/realms/societe/protocol/openid-connect/auth
 
-2. Passage par Keycloak (Service Provider)
+3. Passage par Keycloak (Service Provider)
 Keycloak reçoit la requête d’authentification et détecte que l’IdP configuré pour ce realm est Auth0 via SAML2.
 Il redirectionne Jean vers le point d’entrée SAML d’Auth0, en embarquant les métadonnées nécessaires.
 
-3. Authentification sur Auth0 (Identity Provider)
+4. Authentification sur Auth0 (Identity Provider)
 Auth0 affiche la page de connexion :
 Jean saisit ses identifiants (jean.dupuis@societe.com + mot de passe).
 Auth0 vérifie ces informations et crée une assertion SAML signée contenant :
 NameID = jean.dupuis@societe.com
 Attributs : prénom, nom, service, rôle.
 
-4. Retour vers Keycloak
+5. Retour vers Keycloak
 Auth0 renvoie l’assertion SAML à Keycloak via un POST sécurisé vers l’endpoint ACS (Assertion Consumer Service).
 Keycloak :
 
